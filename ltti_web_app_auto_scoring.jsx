@@ -214,7 +214,7 @@ function pickProfile(code: string) {
 }
 
 // Compute 4-letter code
-function computeCode(scores: Record<Axis, Record<string, number>>): string {
+function computeCode(scores: Record<Axis, Record<Letter, number>>): string {
   const I = scores.energy.I ?? 0; const E = scores.energy.E ?? 0;
   const S = scores.action.S ?? 0; const T = scores.action.T ?? 0;
   const R = scores.cognition.R ?? 0; const X = scores.cognition.X ?? 0;
@@ -277,11 +277,17 @@ export default function LTTIApp() {
 
   // scoring
   const scores = useMemo(() => {
-    const res: Record<Axis, Record<string, number>> = {
+    const res: Record<Axis, Record<Letter, number>> = {
       energy: { I: 0, E: 0 },
       action: { S: 0, T: 0 },
       cognition: { R: 0, X: 0 },
       control: { D: 0, C: 0 },
+    };
+    const opposite: Record<Letter, Letter> = {
+      I: "E", E: "I",
+      S: "T", T: "S",
+      R: "X", X: "R",
+      D: "C", C: "D",
     };
     for (const q of questions) {
       const v = answers[q.id];
@@ -289,7 +295,9 @@ export default function LTTIApp() {
       // clamp 1..5
       const val = Math.min(5, Math.max(1, v));
       const axisMap = res[q.axis];
+      const opp = opposite[q.target];
       axisMap[q.target] = (axisMap[q.target] ?? 0) + val;
+      axisMap[opp] = (axisMap[opp] ?? 0) + 6 - val;
     }
     return res;
   }, [answers, questions]);
@@ -423,7 +431,7 @@ function Likert({ value, onChange }: { value?: number; onChange: (v: number) => 
   );
 }
 
-function ResultView({ code, scores }: { code: string; scores: Record<Axis, Record<string, number>> }) {
+function ResultView({ code, scores }: { code: string; scores: Record<Axis, Record<Letter, number>> }) {
   const profile = pickProfile(code);
 
   const familyColor: Record<string, string> = {
